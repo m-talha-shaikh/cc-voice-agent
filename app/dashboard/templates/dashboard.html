@@ -140,7 +140,6 @@
     .muted { color: var(--muted); font-size: 0.85rem; }
     #call-status { margin-top: 0.5rem; color: var(--muted); font-size: 0.9rem; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.3.0/dist/vapi.js"></script>
 </head>
 <body>
   <header>
@@ -220,46 +219,71 @@
       <p class="muted" style="margin-top:1rem;">Auto-refreshes every 5 seconds so new registrations appear while you're on the phone.</p>
     </section>
   </main>
-  <script>
-    const themeToggle = document.getElementById('theme-toggle');
-    themeToggle.addEventListener('click', () => {
-      const html = document.documentElement;
-      html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('theme', html.dataset.theme);
-    });
-    const saved = localStorage.getItem('theme');
-    if (saved) document.documentElement.dataset.theme = saved;
+  <script type="module">
+    import Vapi from "https://esm.sh/@vapi-ai/web@2.3.8";
 
-    setTimeout(() => location.reload(), 5000);
+    const themeToggle = document.getElementById("theme-toggle");
+    themeToggle.addEventListener("click", () => {
+      const html = document.documentElement;
+      html.dataset.theme = html.dataset.theme === "dark" ? "light" : "dark";
+      localStorage.setItem("theme", html.dataset.theme);
+    });
+    const saved = localStorage.getItem("theme");
+    if (saved) document.documentElement.dataset.theme = saved;
 
     const publicKey = {{ vapi_public_key|tojson }};
     const assistantId = {{ assistant_id|tojson }};
-    const statusEl = document.getElementById('call-status');
-    const startBtn = document.getElementById('browser-call');
-    const hangBtn = document.getElementById('hangup');
+    const phone = {{ phone|tojson }};
+    const statusEl = document.getElementById("call-status");
+    const startBtn = document.getElementById("browser-call");
+    const hangBtn = document.getElementById("hangup");
     let vapi = null;
+    let inCall = false;
+    let refreshTimer = null;
 
-    startBtn.addEventListener('click', async () => {
+    function scheduleRefresh() {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        if (!inCall) location.reload();
+        else scheduleRefresh();
+      }, 5000);
+    }
+    scheduleRefresh();
+
+    startBtn.addEventListener("click", async () => {
       if (!publicKey || !assistantId) {
-        statusEl.textContent = 'Browser calling needs VAPI_PUBLIC_KEY and VAPI_ASSISTANT_ID.';
+        statusEl.textContent = "Browser calling is not configured yet. Dial " + phone + " instead.";
         return;
       }
       try {
-        const VapiCtor = window.Vapi || window.vapiSDK || (window.default && window.default.Vapi);
-        if (!VapiCtor) {
-          statusEl.textContent = 'Vapi Web SDK failed to load. Dial ' + {{ phone|tojson }} + ' instead, or refresh.';
-          return;
+        statusEl.textContent = "Connecting… allow microphone if prompted.";
+        if (!vapi) {
+          vapi = new Vapi(publicKey);
+          vapi.on("call-start", () => {
+            inCall = true;
+            statusEl.textContent = "Connected — you can speak now.";
+            hangBtn.hidden = false;
+          });
+          vapi.on("call-end", () => {
+            inCall = false;
+            statusEl.textContent = "Call ended.";
+            hangBtn.hidden = true;
+            setTimeout(() => location.reload(), 1500);
+          });
+          vapi.on("error", (e) => {
+            statusEl.textContent = "Call error: " + (e?.message || JSON.stringify(e) || e);
+          });
         }
-        vapi = typeof VapiCtor === 'function' ? new VapiCtor(publicKey) : new VapiCtor.default(publicKey);
-        vapi.on('call-start', () => { statusEl.textContent = 'Browser call connected…'; hangBtn.hidden = false; });
-        vapi.on('call-end', () => { statusEl.textContent = 'Browser call ended.'; hangBtn.hidden = true; setTimeout(() => location.reload(), 1500); });
-        vapi.on('error', (e) => { statusEl.textContent = 'Call error: ' + (e?.message || e); });
         await vapi.start(assistantId);
       } catch (e) {
-        statusEl.textContent = 'Could not start browser call: ' + e + ' — dial the phone number instead.';
+        inCall = false;
+        statusEl.textContent = "Could not start browser call (" + e + "). Dial " + phone + " instead.";
       }
     });
-    hangBtn.addEventListener('click', () => { if (vapi) vapi.stop(); });
+
+    hangBtn.addEventListener("click", () => {
+      if (vapi) vapi.stop();
+    });
   </script>
 </body>
 </html>

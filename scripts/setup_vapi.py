@@ -263,13 +263,15 @@ def build_assistant_payload(s) -> dict:
     webhook_url = f"{base}/vapi/webhook"
     tools = tool_defs(tools_url, s.vapi_webhook_secret)
 
+    # Prefer Vapi-hosted OpenAI for conversational quality on phone demos.
+    # Set LLM_PROVIDER=groq to use free Groq instead.
     if s.llm_provider == "groq" and s.groq_api_key:
         model = {
             "provider": "groq",
             "model": "llama-3.3-70b-versatile",
             "messages": [{"role": "system", "content": prompt}],
             "tools": tools,
-            "temperature": 0.4,
+            "temperature": 0.55,
         }
     elif s.llm_provider == "google" and s.google_api_key:
         model = {
@@ -277,21 +279,23 @@ def build_assistant_payload(s) -> dict:
             "model": "gemini-2.0-flash",
             "messages": [{"role": "system", "content": prompt}],
             "tools": tools,
-            "temperature": 0.4,
+            "temperature": 0.55,
         }
     else:
         model = {
             "provider": "openai",
-            "model": "gpt-4.1",
+            "model": "gpt-4o",
             "messages": [{"role": "system", "content": prompt}],
             "tools": tools,
-            "temperature": 0.4,
+            "temperature": 0.55,
         }
 
     transcriber: dict = {
         "provider": "deepgram",
         "model": "nova-3",
         "language": "multi",
+        "numerals": True,
+        "smartFormat": True,
         "keyterm": [
             "CareCloud",
             "date of birth",
@@ -299,11 +303,13 @@ def build_assistant_payload(s) -> dict:
             "insurance",
             "O'Brien",
             "McDonald",
+            "zero",
+            "oh",
+            "double",
+            "triple",
+            "area code",
         ],
     }
-    if s.deepgram_api_key:
-        # Vapi uses org credentials when registered; key can also be omitted
-        pass
 
     return {
         "name": "Riley",
@@ -314,17 +320,27 @@ def build_assistant_payload(s) -> dict:
         },
         "transcriber": transcriber,
         "firstMessage": (
-            "Hi, thanks for calling CareCloud Clinic. This is Riley, an AI intake coordinator. "
-            "I can help you register as a new patient. Could I start with your ten-digit phone number?"
+            "Hi, thanks for calling CareCloud Clinic — this is Riley, an AI intake coordinator. "
+            "I can help you register. What's the best ten-digit phone number to reach you?"
         ),
-        "silenceTimeoutSeconds": 45,
+        "silenceTimeoutSeconds": 40,
         "maxDurationSeconds": 900,
         "backgroundSound": "off",
+        "backgroundDenoisingEnabled": True,
         "serverUrl": webhook_url,
         "serverUrlSecret": s.vapi_webhook_secret,
         "endCallFunctionEnabled": True,
         "recordingEnabled": True,
         "hipaaEnabled": False,
+        "startSpeakingPlan": {
+            "waitSeconds": 0.4,
+            "smartEndpointingEnabled": True,
+        },
+        "stopSpeakingPlan": {
+            "numWords": 2,
+            "voiceSeconds": 0.2,
+            "backoffSeconds": 0.8,
+        },
         "clientMessages": [],
         "serverMessages": [
             "status-update",
@@ -332,7 +348,6 @@ def build_assistant_payload(s) -> dict:
             "hang",
         ],
     }
-
 
 def main() -> None:
     s = get_settings()
