@@ -237,7 +237,7 @@
   </div>
 
   <script type="module">
-    import Vapi from "https://esm.sh/@vapi-ai/web@2.3.8";
+    import Vapi from "https://esm.sh/@vapi-ai/web@2.3.8?bundle";
 
     const themeToggle = document.getElementById("theme-toggle");
     themeToggle.addEventListener("click", () => {
@@ -255,46 +255,73 @@
     const startBtn = document.getElementById("browser-call");
     const hangBtn = document.getElementById("hangup");
     let vapi = null;
-    let inCall = false;
+    // True from click until call fully ends — blocks page reload so WebRTC can finish connecting
+    let callBusy = false;
     let refreshTimer = null;
 
     function scheduleRefresh() {
       if (refreshTimer) clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => {
-        if (!inCall) location.reload();
-        else scheduleRefresh();
-      }, 5000);
+        if (callBusy) {
+          scheduleRefresh();
+          return;
+        }
+        location.reload();
+      }, 8000);
     }
     scheduleRefresh();
+
+    function stopRefresh() {
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+        refreshTimer = null;
+      }
+    }
 
     startBtn.addEventListener("click", async () => {
       if (!publicKey || !assistantId) {
         statusEl.textContent = "Browser calling is not configured. Dial " + phone + " instead.";
         return;
       }
+      if (callBusy) return;
+
+      callBusy = true;
+      stopRefresh();
+      startBtn.disabled = true;
+      statusEl.textContent = "Connecting… allow microphone if prompted.";
+
       try {
-        statusEl.textContent = "Connecting… allow microphone if prompted.";
         if (!vapi) {
           vapi = new Vapi(publicKey);
           vapi.on("call-start", () => {
-            inCall = true;
             statusEl.textContent = "Connected — you can speak now.";
             hangBtn.hidden = false;
           });
           vapi.on("call-end", () => {
-            inCall = false;
-            statusEl.textContent = "Call ended.";
+            callBusy = false;
+            startBtn.disabled = false;
             hangBtn.hidden = true;
-            setTimeout(() => location.reload(), 1500);
+            statusEl.textContent = "Call ended.";
+            setTimeout(() => location.reload(), 1200);
           });
           vapi.on("error", (e) => {
-            statusEl.textContent = "Call error: " + (e?.message || JSON.stringify(e) || e);
+            const msg = e?.message || (typeof e === "string" ? e : JSON.stringify(e));
+            statusEl.textContent = "Call error: " + msg + " — try again or dial " + phone;
+            // Don't clear busy on transient errors if call still running; unlock if never started
+            if (hangBtn.hidden) {
+              callBusy = false;
+              startBtn.disabled = false;
+              scheduleRefresh();
+            }
           });
         }
         await vapi.start(assistantId);
       } catch (e) {
-        inCall = false;
+        callBusy = false;
+        startBtn.disabled = false;
+        hangBtn.hidden = true;
         statusEl.textContent = "Could not start browser call (" + e + "). Dial " + phone + " instead.";
+        scheduleRefresh();
       }
     });
 
