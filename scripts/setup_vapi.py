@@ -323,7 +323,7 @@ def build_assistant_payload(s) -> dict:
             "Hi, thanks for calling CareCloud Clinic — this is Riley, an AI intake coordinator. "
             "I can help you register. What's the best ten-digit phone number to reach you?"
         ),
-        "silenceTimeoutSeconds": 40,
+        "silenceTimeoutSeconds": 60,
         "maxDurationSeconds": 900,
         "backgroundSound": "off",
         "backgroundDenoisingEnabled": True,
@@ -332,14 +332,21 @@ def build_assistant_payload(s) -> dict:
         "endCallFunctionEnabled": True,
         "recordingEnabled": True,
         "hipaaEnabled": False,
+        # Patient turn-taking: wait longer after silence so digit-by-digit
+        # phone/ZIP pauses are not treated as end-of-turn.
         "startSpeakingPlan": {
-            "waitSeconds": 0.4,
-            "smartEndpointingEnabled": True,
+            "waitSeconds": 1.4,
+            "smartEndpointingEnabled": False,
+            "transcriptionEndpointingPlan": {
+                "onPunctuationSeconds": 1.0,
+                "onNoPunctuationSeconds": 1.6,
+                "onNumberSeconds": 2.0,
+            },
         },
         "stopSpeakingPlan": {
-            "numWords": 2,
-            "voiceSeconds": 0.2,
-            "backoffSeconds": 0.8,
+            "numWords": 1,
+            "voiceSeconds": 0.35,
+            "backoffSeconds": 1.2,
         },
         "clientMessages": [],
         "serverMessages": [

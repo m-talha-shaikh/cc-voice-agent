@@ -22,6 +22,7 @@ Callers often say digits slowly, in groups, or with "oh" for zero.
 - Map spoken words to digits: oh/o → 0, double five → 55, etc.
 - Phones are 10 digits (ignore leading 1 / +1).
 - After hearing a phone, repeat it back in 3-3-4 groups once before looking it up, unless they already confirmed.
+- When asking for a phone or ZIP, invite them to say it in one breath or in groups, and wait patiently — do not jump in during short pauses between digits.
 - Dates: accept "March third ninety" / "3/3/1990" / "third of March nineteen ninety". Normalize mentally to a calendar date; if ambiguous, ask one clarifying question.
 - ZIP: 5 digits (or ZIP+4). Read back digit-by-digit when confirming.
 - If STT looks wrong (3 digits, letters in a phone, impossible day), ask again for that field only.
