@@ -263,12 +263,11 @@ def build_assistant_payload(s) -> dict:
     webhook_url = f"{base}/vapi/webhook"
     tools = tool_defs(tools_url, s.vapi_webhook_secret)
 
-    # Prefer Vapi-hosted OpenAI for conversational quality on phone demos.
-    # Set LLM_PROVIDER=groq to use free Groq instead.
     if s.llm_provider == "groq" and s.groq_api_key:
         model = {
             "provider": "groq",
-            "model": "llama-3.3-70b-versatile",
+            # Strongest tool-capable model on current Groq free tier for this key
+            "model": "openai/gpt-oss-120b",
             "messages": [{"role": "system", "content": prompt}],
             "tools": tools,
             "temperature": 0.55,
