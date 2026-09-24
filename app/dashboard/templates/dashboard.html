@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CareCloud Clinic — Intake Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f3f6f4;
+      --surface: #ffffff;
+      --ink: #14241c;
+      --muted: #5a6b62;
+      --line: #d5e0da;
+      --accent: #0f6b4c;
+      --accent-soft: #d8efe4;
+      --warn: #8a4b12;
+      --danger: #8f2d2d;
+      --ok: #0f6b4c;
+      --shadow: 0 10px 30px rgba(20, 36, 28, 0.06);
+    }
+    [data-theme="dark"] {
+      --bg: #0f1612;
+      --surface: #182119;
+      --ink: #e8f0eb;
+      --muted: #9bb0a4;
+      --line: #2a3a31;
+      --accent: #4ec994;
+      --accent-soft: #1b3328;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "DM Sans", system-ui, sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #d9efe4 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e7eef8 0%, transparent 50%),
+        var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    header {
+      padding: 1.5rem 1.75rem 0.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    h1 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 1.75rem;
+      margin: 0 0 0.25rem;
+      letter-spacing: -0.02em;
+    }
+    .sub { color: var(--muted); margin: 0; font-size: 0.95rem; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+    .pill {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.85rem;
+      box-shadow: var(--shadow);
+    }
+    .pill strong { color: var(--accent); }
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    button, .btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 0.65rem 0.9rem;
+      font: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    button.primary, .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+    main {
+      padding: 1rem 1.75rem 2.5rem;
+      display: grid;
+      gap: 1.25rem;
+      grid-template-columns: 1.4fr 1fr;
+    }
+    @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+    section {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1rem 1.1rem 1.2rem;
+      box-shadow: var(--shadow);
+    }
+    section h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.05rem;
+    }
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    input[type="search"] {
+      flex: 1;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.6rem 0.75rem;
+      font: inherit;
+      background: transparent;
+      color: var(--ink);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    th, td { text-align: left; padding: 0.55rem 0.35rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    a { color: var(--accent); }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge.api { background: #e8eef8; color: #2c4f86; }
+    [data-theme="dark"] .badge.api { background: #1d2a3d; color: #9db7e8; }
+    .status { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .status.completed { color: var(--ok); }
+    .status.dropped, .status.failed { color: var(--danger); }
+    .status.in_progress { color: var(--warn); }
+    .muted { color: var(--muted); font-size: 0.85rem; }
+    #call-status { margin-top: 0.5rem; color: var(--muted); font-size: 0.9rem; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.3.0/dist/vapi.js"></script>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>CareCloud Clinic</h1>
+      <p class="sub">Live intake dashboard — patients, calls, and browser voice fallback</p>
+      <div class="pill-row">
+        <div class="pill">Call <strong>{{ phone }}</strong></div>
+        <div class="pill">API <strong><a href="{{ api_base }}/docs" target="_blank">/docs</a></strong></div>
+        <div class="pill">Health <strong><a href="/healthz" target="_blank">/healthz</a></strong></div>
+        <div class="pill">Patients <strong>{{ patients|length }}</strong> shown</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="button" id="theme-toggle">Toggle theme</button>
+      <button type="button" class="primary" id="browser-call">Talk to the agent in your browser</button>
+      <button type="button" id="hangup" hidden>End browser call</button>
+    </div>
+  </header>
+  <p id="call-status" style="padding: 0 1.75rem;"></p>
+  <main>
+    <section>
+      <h2>Patients</h2>
+      <form class="toolbar" method="get" action="/dashboard">
+        <input type="search" name="q" value="{{ q }}" placeholder="Search name, DOB, or phone" />
+        <button type="submit">Search</button>
+      </form>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>DOB</th>
+            <th>Phone</th>
+            <th>Via</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in patients %}
+          <tr>
+            <td><a href="/dashboard/patients/{{ p.patient_id }}">{{ p.first_name }} {{ p.last_name }}</a></td>
+            <td>{{ p.date_of_birth }}</td>
+            <td>{{ p.phone_number }}</td>
+            <td><span class="badge {% if p.created_via == 'api' %}api{% endif %}">{{ p.created_via }}</span></td>
+            <td class="muted">{{ p.created_at.strftime('%Y-%m-%d %H:%M') if p.created_at else '' }} UTC</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="muted">No patients yet. Call the number or use the browser button.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    <section>
+      <h2>Recent calls</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Status</th>
+            <th>Outcome</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in calls %}
+          <tr>
+            <td class="muted">{{ c.started_at.strftime('%m/%d %H:%M') if c.started_at else '—' }}</td>
+            <td><span class="status {{ c.status.value if c.status else '' }}">{{ c.status.value if c.status else '—' }}</span></td>
+            <td>{{ c.outcome.value if c.outcome else '—' }}</td>
+            <td>{{ c.duration_s ~ 's' if c.duration_s is not none else '—' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="muted">No calls logged yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="muted" style="margin-top:1rem;">Auto-refreshes every 5 seconds so new registrations appear while you're on the phone.</p>
+    </section>
+  </main>
+  <script>
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.addEventListener('click', () => {
+      const html = document.documentElement;
+      html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('theme', html.dataset.theme);
+    });
+    const saved = localStorage.getItem('theme');
+    if (saved) document.documentElement.dataset.theme = saved;
+
+    setTimeout(() => location.reload(), 5000);
+
+    const publicKey = {{ vapi_public_key|tojson }};
+    const assistantId = {{ assistant_id|tojson }};
+    const statusEl = document.getElementById('call-status');
+    const startBtn = document.getElementById('browser-call');
+    const hangBtn = document.getElementById('hangup');
+    let vapi = null;
+
+    startBtn.addEventListener('click', async () => {
+      if (!publicKey || !assistantId) {
+        statusEl.textContent = 'Browser calling needs VAPI_PUBLIC_KEY and VAPI_ASSISTANT_ID.';
+        return;
+      }
+      try {
+        const VapiCtor = window.Vapi || window.vapiSDK || (window.default && window.default.Vapi);
+        if (!VapiCtor) {
+          statusEl.textContent = 'Vapi Web SDK failed to load. Dial ' + {{ phone|tojson }} + ' instead, or refresh.';
+          return;
+        }
+        vapi = typeof VapiCtor === 'function' ? new VapiCtor(publicKey) : new VapiCtor.default(publicKey);
+        vapi.on('call-start', () => { statusEl.textContent = 'Browser call connected…'; hangBtn.hidden = false; });
+        vapi.on('call-end', () => { statusEl.textContent = 'Browser call ended.'; hangBtn.hidden = true; setTimeout(() => location.reload(), 1500); });
+        vapi.on('error', (e) => { statusEl.textContent = 'Call error: ' + (e?.message || e); });
+        await vapi.start(assistantId);
+      } catch (e) {
+        statusEl.textContent = 'Could not start browser call: ' + e + ' — dial the phone number instead.';
+      }
+    });
+    hangBtn.addEventListener('click', () => { if (vapi) vapi.stop(); });
+  </script>
+</body>
+</html>

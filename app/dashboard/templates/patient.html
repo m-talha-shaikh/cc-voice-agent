@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ patient.first_name }} {{ patient.last_name }} — CareCloud</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg:#f3f6f4; --surface:#fff; --ink:#14241c; --muted:#5a6b62; --line:#d5e0da; --accent:#0f6b4c; }
+    body { margin:0; font-family:"DM Sans",system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+    header, main { max-width: 960px; margin: 0 auto; padding: 1.25rem; }
+    h1 { font-family: Fraunces, Georgia, serif; }
+    a { color: var(--accent); }
+    .card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:1rem; margin-bottom:1rem; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem 1rem; }
+    @media (max-width:700px){ .grid{grid-template-columns:1fr;} }
+    .label { color:var(--muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.04em; }
+    .value { margin-bottom:0.4rem; }
+    audio { width:100%; margin-top:0.5rem; }
+    pre { white-space:pre-wrap; background:#0f1612; color:#e8f0eb; padding:0.75rem; border-radius:10px; font-size:0.85rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <p><a href="/dashboard">← Dashboard</a></p>
+    <h1>{{ patient.first_name }} {{ patient.last_name }}</h1>
+    <p>{{ patient.phone_number }} · {{ patient.date_of_birth }} · via {{ patient.created_via }}</p>
+  </header>
+  <main>
+    <div class="card">
+      <h2>Demographics</h2>
+      <div class="grid">
+        <div><div class="label">Sex</div><div class="value">{{ patient.sex.value }}</div></div>
+        <div><div class="label">Email</div><div class="value">{{ patient.email or '—' }}</div></div>
+        <div><div class="label">Address</div><div class="value">{{ patient.address_line_1 }}{% if patient.address_line_2 %}, {{ patient.address_line_2 }}{% endif %}</div></div>
+        <div><div class="label">City / State / ZIP</div><div class="value">{{ patient.city }}, {{ patient.state }} {{ patient.zip_code }}</div></div>
+        <div><div class="label">Language</div><div class="value">{{ patient.preferred_language }}</div></div>
+        <div><div class="label">Insurance</div><div class="value">{{ patient.insurance_provider or '—' }} {% if patient.insurance_member_id %}({{ patient.insurance_member_id }}){% endif %}</div></div>
+        <div><div class="label">Emergency contact</div><div class="value">{{ patient.emergency_contact_name or '—' }} {{ patient.emergency_contact_phone or '' }}</div></div>
+        <div><div class="label">Patient ID</div><div class="value"><code>{{ patient.patient_id }}</code></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Appointments</h2>
+      {% for a in appointments %}
+        <p>
+          {{ a.slot.starts_at.strftime('%A %b %d, %Y %-I:%M %p') if a.slot else a.slot_id }}
+          — {{ a.status.value }}{% if a.reason %} ({{ a.reason }}){% endif %}
+        </p>
+      {% else %}
+        <p>No appointments.</p>
+      {% endfor %}
+    </div>
+
+    <div class="card">
+      <h2>Call history</h2>
+      {% for c in calls %}
+        <div style="margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--line);">
+          <strong>{{ c.status.value if c.status else 'call' }}</strong>
+          · {{ c.outcome.value if c.outcome else '—' }}
+          · {{ c.duration_s ~ 's' if c.duration_s is not none else '—' }}
+          {% if c.summary %}<p>{{ c.summary }}</p>{% endif %}
+          {% if c.recording_url %}<audio controls src="{{ c.recording_url }}"></audio>{% endif %}
+          {% if c.transcript %}<pre>{{ c.transcript }}</pre>{% endif %}
+        </div>
+      {% else %}
+        <p>No calls linked.</p>
+      {% endfor %}
+    </div>
+  </main>
+</body>
+</html>
