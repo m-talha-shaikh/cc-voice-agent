@@ -266,8 +266,9 @@ def build_assistant_payload(s) -> dict:
     if s.llm_provider == "groq" and s.groq_api_key:
         model = {
             "provider": "groq",
-            # Strongest tool-capable model on current Groq free tier for this key
-            "model": "openai/gpt-oss-120b",
+            # Voice trade-off: 20B on Groq is fast enough for phone turns and still
+            # supports tool calling. 120B is higher quality but adds dead air.
+            "model": "openai/gpt-oss-20b",
             "messages": [{"role": "system", "content": prompt}],
             "tools": tools,
             "temperature": 0.55,
