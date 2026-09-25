@@ -335,14 +335,14 @@ def build_assistant_payload(s) -> dict:
         # Patient turn-taking: wait longer after silence so digit-by-digit
         # phone/ZIP pauses are not treated as end-of-turn.
         "startSpeakingPlan": {
-        "waitSeconds": 2.25,
-        "smartEndpointingEnabled": False,
-        "transcriptionEndpointingPlan": {
-            "onPunctuationSeconds": 1.8,
-            "onNoPunctuationSeconds": 2.8,
-            "onNumberSeconds": 3.2,
+            "waitSeconds": 1.7,
+            "smartEndpointingEnabled": True,
+            "transcriptionEndpointingPlan": {
+                "onPunctuationSeconds": 1.2,
+                "onNoPunctuationSeconds": 1.8,
+                "onNumberSeconds": 2.2,
+            },
         },
-    },
         "stopSpeakingPlan": {
             "numWords": 1,
             "voiceSeconds": 0.4,
